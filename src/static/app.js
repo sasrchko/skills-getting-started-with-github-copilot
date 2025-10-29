@@ -13,6 +13,21 @@ document.addEventListener("DOMContentLoaded", () => {
       // Clear loading message
       activitiesList.innerHTML = "";
 
+      // Clear any existing options except the placeholder
+      while (activitySelect.options.length > 1) {
+        activitySelect.remove(1);
+      }
+
+      // Small helper to escape HTML to avoid accidental injection
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
@@ -20,11 +35,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // build participants list markup (include a delete button for each participant)
+        const participants = Array.isArray(details.participants) ? details.participants : [];
+        let participantsHtml = "";
+        if (participants.length === 0) {
+          participantsHtml = `<div class="participants-empty">No participants yet</div>`;
+        } else {
+          participantsHtml = `<ul class="participants-list">` +
+            participants.map(p => `
+              <li data-email="${escapeHtml(p)}">
+                <span class="participant-email">${escapeHtml(p)}</span>
+                <button class="participant-delete" title="Unregister ${escapeHtml(p)}">✖</button>
+              </li>`).join("") +
+            `</ul>`;
+        }
+
         activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <h4>${escapeHtml(name)}</h4>
+          <p>${escapeHtml(details.description)}</p>
+          <p><strong>Schedule:</strong> ${escapeHtml(details.schedule)}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <div class="participants-title">Participants</div>
+            ${participantsHtml}
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
@@ -83,4 +117,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initialize app
   fetchActivities();
+  
+  // Delegate click for participant delete buttons
+  activitiesList.addEventListener("click", async (event) => {
+    const btn = event.target.closest(".participant-delete");
+    if (!btn) return;
+
+    const li = btn.closest("li");
+    if (!li) return;
+
+    const email = li.dataset.email;
+    // find the activity name from the parent card
+    const activityCard = li.closest('.activity-card');
+    if (!activityCard) return;
+    const activityName = activityCard.querySelector('h4').textContent;
+
+    try {
+      const resp = await fetch(
+        `/activities/${encodeURIComponent(activityName)}/participants?email=${encodeURIComponent(email)}`,
+        { method: "DELETE" }
+      );
+
+      const result = await resp.json();
+      if (resp.ok) {
+        // refresh list
+        fetchActivities();
+      } else {
+        messageDiv.textContent = result.detail || 'Failed to remove participant';
+        messageDiv.className = 'error';
+        messageDiv.classList.remove('hidden');
+        setTimeout(() => messageDiv.classList.add('hidden'), 5000);
+      }
+    } catch (err) {
+      console.error('Error removing participant:', err);
+    }
+  });
 });
