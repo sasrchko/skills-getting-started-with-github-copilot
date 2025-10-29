@@ -157,9 +157,9 @@ footer {
 }
 
 .participants-list {
-  list-style: disc inside;
+  list-style: none; /* hide default bullets */
   margin-left: 0;
-  padding-left: 12px;
+  padding-left: 0;
   color: #444;
   font-size: 14px;
 }
@@ -168,18 +168,29 @@ footer {
   margin-bottom: 6px;
   display: flex;
   align-items: center;
+  gap: 8px;
+  justify-content: space-between;
 }
 
-/* small "avatar" dot for each participant to add visual polish */
-.participants-list li::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background: linear-gradient(135deg, #1a237e, #3949ab);
-  border-radius: 50%;
-  margin-right: 8px;
-  flex: 0 0 auto;
+/* participant email label */
+.participant-email {
+  color: #222;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+/* delete button */
+.participant-delete {
+  background: transparent;
+  border: none;
+  color: #c62828;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.participant-delete:hover {
+  background: rgba(198,40,40,0.08);
 }
 
 /* "no participants" hint */
