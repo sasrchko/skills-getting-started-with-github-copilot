@@ -13,6 +13,21 @@ document.addEventListener("DOMContentLoaded", () => {
       // Clear loading message
       activitiesList.innerHTML = "";
 
+      // Clear any existing options except the placeholder
+      while (activitySelect.options.length > 1) {
+        activitySelect.remove(1);
+      }
+
+      // Small helper to escape HTML to avoid accidental injection
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
@@ -20,11 +35,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // build participants list markup
+        const participants = Array.isArray(details.participants) ? details.participants : [];
+        let participantsHtml = "";
+        if (participants.length === 0) {
+          participantsHtml = `<div class="participants-empty">No participants yet</div>`;
+        } else {
+          participantsHtml = `<ul class="participants-list">` +
+            participants.map(p => `<li>${escapeHtml(p)}</li>`).join("") +
+            `</ul>`;
+        }
+
         activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <h4>${escapeHtml(name)}</h4>
+          <p>${escapeHtml(details.description)}</p>
+          <p><strong>Schedule:</strong> ${escapeHtml(details.schedule)}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="participants-section">
+            <div class="participants-title">Participants</div>
+            ${participantsHtml}
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
